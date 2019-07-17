@@ -6,14 +6,15 @@ import datetime
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.random as nrand
 import csv
 
-startMonth = 1
+startMonth = 7
 startDay = 1
 startYear = 2018
 
-endMonth = 6
-endDay = 26
+endMonth = 7
+endDay = 5
 endYear = 2019
 
 start = datetime.datetime(startYear, startMonth, startDay)
@@ -24,7 +25,8 @@ startingCapital = accValue
 capitalInStocks = 0
 
 #stocks = [('MSFT', 10), ('AAPL', 10), ('PYPL', 10), ('V', 10), ('SBUX', 10), ('O', 10), ('DPK', 7), ('SPXU', 7), ('TWM', 8), ('SQQQ', 8)]
-stocks = [['MSFT', 10], ['V', 10], ['PYPL', 10], ['AXP', 10], ['SBUX', 10], ['AMT', 10], ['DIS', 10], ['VCLT', 12], ['TMF', 13], ['QID', 5]]
+stocks = [['MSFT', 10], ['V', 10], ['PYPL', 10], ['SBUX', 10], ['WM', 10], 
+          ['AMT', 10], ['ERUS', 10], ['GLD', 10], ['TMF', 5], ['VCLT', 5], ['UBT', 5], ['QID', 5]]
 
 purchaseCosts = []
 dates = []
@@ -186,7 +188,7 @@ for f in range(len(spy)):
                 sharesToBuy = math.floor((0.01 * accValue) / float(closes2[counter - 1]))
                 purchaseCosts[x][0] += sharesToBuy
                 purchaseCosts[x][1] = purchaseCosts[x][1] + (sharesToBuy * float(closes2[counter - 1]))
-        
+           
 
         if stocks[x][0] == 'BTC-USD':
             diff = (purchaseCosts[x][0] * float(btc[counter - 1])) - (purchaseCosts[x][1])
@@ -198,9 +200,6 @@ for f in range(len(spy)):
 
     counter += 1
     profitSum = 0
-
-    #print(dailyProfit)
-    #print()
 
     for num in dailyProfit:
         profitSum += num
@@ -215,21 +214,28 @@ dates2 = []
 spyReturns2 = []
 portfolioReturns2 = []
 allData = []
+spyR = []
+portReturnsAnalysis = []
+spyReturnsAnalysis = []
 
 portfolioReturns2.append(0)
+portReturnsAnalysis.append(0)
+
 
 def portfolioReturns():
     
+    '''
     for x in range(len(totalProfit)):
         print(accValue + totalProfit[x][0])
     print()
+    '''
 
     for x in range(len(totalProfit)):
-        print(str(totalProfit[x][1]) + '%')
+        #print(str(totalProfit[x][1]) + '%')
         portfolioReturns2.append(totalProfit[x][1])
-    print()
+        portReturnsAnalysis.append(totalProfit[x][1])
 
-spyR = []
+    print()
 
 def spyReturns():
 
@@ -259,7 +265,8 @@ def spyReturns():
         #print(str(num) + '%')
         spyR.append(str(num) + '%')
         spyReturns2.append(num)
-    
+        spyReturnsAnalysis.append(num)
+
     print()
 
 def printDates():
@@ -271,21 +278,25 @@ def printDates():
 
     print()
 
+def printCode():
+    
+    for x in range(len(dates) - 1):
+        allData.append([dates2[x], portfolioReturns2[x], spyReturns2[x]])
+
+    for x in range(len(allData)):
+        print("['" + str(allData[x][0]) + "', " + str(allData[x][1]) + ", "  + str(allData[x][2]) + "],")
+    
+def vol(returns):
+    # Return the standard deviation of returns
+    return np.std(returns)
+
 
 #printDates()
 
 spyReturns()
 
-#portfolioReturns()
+portfolioReturns()
 
-
-'''
-for x in range(len(dates) - 1):
-    allData.append([dates2[x], portfolioReturns2[x], spyReturns2[x]])
-
-for x in range(len(allData)):
-    print("['" + str(allData[x][0]) + "', " + str(allData[x][1]) + ", "  + str(allData[x][2]) + "],")
-'''
 
 print(purchaseCosts)
 print()
@@ -293,7 +304,43 @@ print(stocks)
 print()
 
 
-with open('C:\\Users\\faiza\\OneDrive\\Desktop\\StockData\\3XBondPortfolio.csv', 'w') as f:
+def vol(returns):
+    return np.std(returns)
+
+
+def beta(returns, market):
+    m = np.matrix([returns, market])
+    return np.cov(returns, market)[0][1]/np.var(market)
+
+
+def sharpe(returns, rf):
+    volatility = returns.std()
+    sharpe_ratio = (returns.mean() - rf) / volatility
+    return sharpe_ratio
+
+
+i = np.argmax(np.maximum.accumulate(portReturnsAnalysis) - portReturnsAnalysis) # end of the period
+j = np.argmax(portReturnsAnalysis[:i]) # start of period
+
+k = np.argmax(np.maximum.accumulate(spyReturnsAnalysis) - spyReturnsAnalysis) # end of the period
+l = np.argmax(spyReturnsAnalysis[:k]) # start of period
+
+portfolioMaxDrawdown = portReturnsAnalysis[j] - portReturnsAnalysis[i]
+spyMaxDrawdown = spyReturnsAnalysis[l] - spyReturnsAnalysis[k]
+
+beta = beta(np.asarray(portReturnsAnalysis), np.asarray(spyReturnsAnalysis))
+alpha = portReturnsAnalysis[len(portReturnsAnalysis) - 1] - (0.6 + beta * (spyReturnsAnalysis[len(spyReturnsAnalysis) - 1] - 0.6))
+sharpeRatio = sharpe(np.asarray(portReturnsAnalysis), 0.6)
+
+print('Portfolio Max Drawdown:', str(portfolioMaxDrawdown) + '%')
+print('SPY Max Drawdown:', str(spyMaxDrawdown) + '%')
+print('Beta:', beta)
+print('Alpha:', alpha)
+print('Sharpe Ratio:', sharpeRatio)
+
+
+with open('C:\\Users\\faiza\\OneDrive\\Desktop\\StockData\\FaizanHedgePortfolio.csv', 'w') as f:
+    
     for x in range(len(dates)):
         
         if x == 0:
@@ -302,3 +349,17 @@ with open('C:\\Users\\faiza\\OneDrive\\Desktop\\StockData\\3XBondPortfolio.csv',
             f.write(dates[x] + ',' + str(startingCapital) + ',' + spyR[x - 1] + ',' + '0%' + '\n')
         else:
             f.write(dates[x] + ',' + str(accValue + totalProfit[x - 2][0]) + ',' +  spyR[x - 1] + ',' + str(totalProfit[x - 2][1]) + '%' + '\n') 
+    
+    f.write('\n\n\n')
+    f.write('Stock, Percentage of Portfolio\n')
+
+    for x in range(len(stocks)):
+        f.write(stocks[x][0] + ',' + str(stocks[x][1]) + '%\n')
+
+    f.write('\n\n')
+    f.write('Max Drawdown For Portfolio, ' + str(portfolioMaxDrawdown) + '%\n')
+    f.write('Max Drawdown For SPY, ' + str(spyMaxDrawdown) + '%')
+
+    f.write('\nBeta,' + str(beta))
+    f.write('\nAlpha,' + str(alpha))
+    f.write('\nSharpe Ratio,' + str(sharpeRatio))
